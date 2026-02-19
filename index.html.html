@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Universal Focus Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;700;900&family=Inter:wght@400;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            background: #f8fafc; 
+            touch-action: none; /* ป้องกันหน้าจอเลื่อนขณะระบายสี */
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+        .main-card { background: white; border-radius: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .slot { 
+            border-radius: 0.6rem; 
+            background: #f1f5f9; 
+            height: 2.8rem; 
+            border: 1px solid #e2e8f0; 
+            transition: background 0.1s;
+        }
+        .subject-btn { transition: 0.3s; filter: grayscale(1); opacity: 0.5; position: relative; }
+        .subject-btn.active { filter: grayscale(0); opacity: 1; transform: translateY(-2px); }
+        .no-scrollbar::-webkit-scrollbar { width: 0px; height: 0px; }
+        
+        /* สไตล์หน้าต่าง Save */
+        #photoTemplate { display: none; position: absolute; left: -9999px; }
+        #captureArea { background: white; padding: 50px; width: 750px; border-radius: 3rem; color: #1e293b; }
+        .focus-badge { 
+            background: #1e293b; 
+            color: white; 
+            padding: 20px 40px; 
+            border-radius: 2.5rem; 
+            text-align: center;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+        .focus-number { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 3.5rem; line-height: 1; letter-spacing: -2px; }
+
+        /* ปรับแต่งสำหรับคอมพิวเตอร์ */
+        @media (min-width: 768px) {
+            body { touch-action: auto; } /* คอมพิวเตอร์ให้เลื่อนได้ปกติ */
+            .main-grid-container { overflow-y: auto; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10 flex flex-col items-center">
+
+    <div id="appInterface" class="main-card max-w-4xl w-full p-6 md:p-12 overflow-hidden flex flex-col h-[92vh] md:h-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+                <span class="text-indigo-500 text-[10px] font-900 uppercase tracking-[0.3em] mb-1 block">Daily Dashboard</span>
+                <input type="date" id="planDate" class="text-slate-400 font-bold border-none outline-none mb-2 bg-transparent">
+                <h2 id="userTitle" onclick="changeName()" class="text-4xl md:text-6xl font-900 text-slate-800 uppercase italic tracking-tighter cursor-pointer">NAME</h2>
+            </div>
+            <button onclick="takeSnap()" class="w-full md:w-auto bg-slate-900 text-white px-8 py-4 rounded-3xl shadow-2xl font-bold active:scale-95 transition flex items-center justify-center gap-2">
+                <span>📸</span> <span>SAVE IMAGE</span>
+            </button>
+        </header>
+
+        <div id="subList" class="flex gap-3 overflow-x-auto pb-4 mb-6 no-scrollbar">
+            <button onclick="setEraser(this)" class="eraser-btn subject-btn min-w-[90px] md:min-w-[110px] p-4 md:p-5 rounded-[2rem] text-center bg-slate-100">
+                <div class="text-2xl mb-1">🧼</div>
+                <div class="text-[9px] font-900 uppercase text-slate-400">Eraser</div>
+            </button>
+            <div class="relative min-w-[90px] md:min-w-[110px]">
+                <input type="color" id="colorPicker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onchange="addNewSubject(this.value)">
+                <div class="border-2 border-dashed border-slate-200 p-4 md:p-5 rounded-[2rem] text-center text-slate-300">
+                    <div class="text-2xl mb-1">+</div>
+                    <div class="text-[9px] font-900 uppercase">Add</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="mainGrid" class="main-grid-container space-y-4 flex-1 overflow-y-auto pr-2 no-scrollbar" style="touch-action: pan-y;">
+            </div>
+    </div>
+
+    <div id="photoTemplate">
+        <div id="captureArea">
+            <div class="flex justify-between items-end mb-12 border-b-2 border-slate-50 pb-10">
+                <div>
+                    <p id="snapDate" class="text-indigo-500 font-900 text-sm uppercase tracking-widest mb-2"></p>
+                    <h2 id="snapUser" class="text-6xl font-900 text-slate-800 italic uppercase tracking-tighter"></h2>
+                </div>
+                <div class="focus-badge">
+                    <p class="text-[10px] font-900 uppercase tracking-widest opacity-60 mb-1">Total Focus</p>
+                    <div id="snapTotal" class="focus-number">0h 00m</div>
+                </div>
+            </div>
+            <div id="filteredGrid" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        let isDragging = false, isEraserMode = false, curColor = '#6366f1', curSub = 'Quran';
+        let subjects = JSON.parse(localStorage.getItem('myCustomSubjects')) || [
+            {name: 'Quran', color: '#6366f1', icon: '📖'},
+            {name: 'Halaqoh', color: '#38bdf8', icon: '🤝'}
+        ];
+
+        function setEraser(btn) { isEraserMode = true; document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+
+        function renderSubjects() {
+            const list = document.getElementById('subList'), addBtnArea = list.querySelector('.relative'), eraserBtn = list.querySelector('.eraser-btn');
+            Array.from(list.children).forEach(child => { if(child !== addBtnArea && child !== eraserBtn) child.remove(); });
+            subjects.forEach((s, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "subject-btn min-w-[90px] md:min-w-[110px] p-4 md:p-5 rounded-[2rem] text-center bg-slate-50";
+                btn.onclick = () => { isEraserMode = false; document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); curColor = s.color; curSub = s.name; };
+                btn.innerHTML = `<div class="text-2xl mb-1">${s.icon || '⭐'}</div><div class="text-[10px] font-900 uppercase" style="color:${s.color}">${s.name}</div>`;
+                list.insertBefore(btn, addBtnArea);
+            });
+            localStorage.setItem('myCustomSubjects', JSON.stringify(subjects));
+        }
+
+        function buildGrid() {
+            const g = document.getElementById('mainGrid');
+            for(let h=4; h<=23; h++) {
+                const row = document.createElement('div');
+                row.className = "time-row flex items-center gap-4 md:gap-6";
+                row.innerHTML = `<span class="text-[11px] font-900 text-slate-300 w-10">${h.toString().padStart(2,'0')}:00</span>`;
+                const slots = document.createElement('div');
+                slots.className = "flex-1 grid grid-cols-6 gap-2 md:gap-3";
+                for(let i=0; i<6; i++) {
+                    const s = document.createElement('div'); s.className = "slot";
+                    const action = () => {
+                        if(isEraserMode) { s.style.backgroundColor = ''; s.classList.remove('filled'); }
+                        else { s.style.backgroundColor = curColor; s.classList.add('filled'); }
+                    };
+                    s.onmousedown = (e) => { isDragging = true; action(); };
+                    s.onmouseenter = () => { if(isDragging) action(); };
+                    s.ontouchstart = (e) => { isDragging = true; action(); };
+                    slots.appendChild(s);
+                }
+                row.appendChild(slots); g.appendChild(row);
+            }
+            // ระบบระบายสีแบบลากนิ้ว (Touch Move)
+            window.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const touch = e.touches[0];
+                const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (el && el.classList.contains('slot')) {
+                    if(isEraserMode) { el.style.backgroundColor = ''; el.classList.remove('filled'); }
+                    else { el.style.backgroundColor = curColor; el.classList.add('filled'); }
+                }
+            }, { passive: false });
+        }
+
+        async function takeSnap() {
+            const filteredGrid = document.getElementById('filteredGrid');
+            filteredGrid.innerHTML = '';
+            let hasData = false;
+            document.querySelectorAll('.time-row').forEach(row => {
+                if (row.querySelector('.slot.filled')) {
+                    const clone = row.cloneNode(true);
+                    filteredGrid.appendChild(clone);
+                    hasData = true;
+                }
+            });
+            if (!hasData) return alert("กรุณาระบายสีก่อนบันทึก");
+            document.getElementById('snapDate').innerText = document.getElementById('planDate').value;
+            document.getElementById('snapUser').innerText = document.getElementById('userTitle').innerText;
+            const count = document.querySelectorAll('.slot.filled').length * 10;
+            document.getElementById('snapTotal').innerText = `${Math.floor(count/60)}h ${(count%60).toString().padStart(2,'0')}m`;
+            const target = document.getElementById('photoTemplate');
+            target.style.display = 'block';
+            const canvas = await html2canvas(document.getElementById('captureArea'), { scale: 2 });
+            const link = document.createElement('a');
+            link.download = `Progress.png`; link.href = canvas.toDataURL(); link.click();
+            target.style.display = 'none';
+        }
+
+        function addNewSubject(color) { const name = prompt("ชื่อวิชา:"); if (name) { subjects.push({ name: name.substring(0,8), color: color, icon: '⭐' }); renderSubjects(); } }
+        function changeName() { const n = prompt("เปลี่ยนชื่อ:"); if(n) document.getElementById('userTitle').innerText = n.toUpperCase(); }
+
+        window.onload = () => {
+            document.getElementById('planDate').valueAsDate = new Date();
+            renderSubjects(); buildGrid();
+        };
+        window.onmouseup = () => isDragging = false;
+        window.ontouchend = () => isDragging = false;
+    </script>
+</body>
+</html>
