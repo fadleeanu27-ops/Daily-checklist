@@ -11,17 +11,17 @@
         * { touch-action: none; -webkit-user-select: none; user-select: none; }
         body { font-family: 'Prompt', sans-serif; background: #f1f5f9; overflow: hidden; position: fixed; width: 100%; height: 100%; }
         .main-card { background: white; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.08); height: 95vh; margin-top: 10px; }
-        .slot { border-radius: 4px; background: #f1f5f9; height: 1.8rem; border: 0.5px solid #e2e8f0; }
+        .slot { border-radius: 3px; background: #f1f5f9; height: 1.5rem; border: 0.5px solid #e2e8f0; }
         .subject-btn { transition: 0.2s; filter: grayscale(1); opacity: 0.4; border: 2px solid transparent; }
-        .subject-btn.active { filter: grayscale(0); opacity: 1; border-color: currentColor; background: white !important; transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .subject-btn.active { filter: grayscale(0); opacity: 1; border-color: currentColor; background: white !important; transform: scale(1.05); }
         .no-scrollbar::-webkit-scrollbar { width: 0px; }
         #mainGrid { touch-action: none; overflow-y: auto; padding-right: 5px; }
-        
-        /* Photo Save Style */
         #photoTemplate { display: none; position: absolute; left: -9999px; }
-        #captureArea { background: white; padding: 40px; width: 700px; border-radius: 2.5rem; color: #1e293b; }
-        .focus-badge { background: #1e293b; color: white; padding: 15px 30px; border-radius: 2rem; text-align: center; }
-        .focus-number { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 3rem; line-height: 1; }
+        #captureArea { background: white; padding: 30px; width: 600px; border-radius: 2rem; color: #1e293b; }
+        .focus-badge { background: #1e293b; color: white; padding: 12px 25px; border-radius: 1.5rem; text-align: center; }
+        .focus-number { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 2.5rem; line-height: 1; }
+        .time-row-snap { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .grid-snap { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; flex: 1; }
     </style>
 </head>
 <body class="p-2 flex justify-center items-start">
@@ -32,49 +32,42 @@
                 <input type="date" id="planDate" class="text-slate-400 text-sm font-bold border-none outline-none bg-transparent block">
                 <h2 id="userTitle" onclick="changeName()" class="text-2xl md:text-4xl font-900 text-slate-800 uppercase italic tracking-tighter">FADLEEROMDON</h2>
             </div>
-            <button onclick="takeSnap()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm active:scale-95 transition">
-                📸 SAVE
-            </button>
+            <button onclick="takeSnap()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm active:scale-95 transition">📸 SAVE</button>
         </header>
 
         <div id="subList" class="flex gap-2 overflow-x-auto pb-3 mb-3 no-scrollbar border-b border-slate-100">
             <button id="eraserBtn" onclick="setEraser(this)" class="subject-btn active min-w-[70px] p-2 rounded-xl text-center bg-slate-100 text-slate-400">
-                <div class="text-lg">🧼</div><div class="text-[7px] font-900">ERASER</div>
+                <div class="text-lg">🧼</div><div class="text-[7px] font-900 uppercase">Eraser</div>
             </button>
             <div class="relative min-w-[70px]">
                 <input type="color" id="colorPicker" class="absolute inset-0 opacity-0 w-full h-full" onchange="addNewSubject(this.value)">
                 <div class="border-2 border-dashed border-slate-200 p-2 rounded-xl text-center text-slate-300">
-                    <div class="text-lg">+</div><div class="text-[7px] font-900">ADD</div>
+                    <div class="text-lg">+</div><div class="text-[7px] font-900 uppercase">Add</div>
                 </div>
             </div>
         </div>
 
-        <div id="mainGrid" class="space-y-1.5 flex-1 no-scrollbar">
-            </div>
+        <div id="mainGrid" class="space-y-1 flex-1 no-scrollbar"></div>
     </div>
 
     <div id="photoTemplate"><div id="captureArea">
-        <div class="flex justify-between items-end mb-8 border-b-2 border-slate-50 pb-6">
-            <div><p id="snapDate" class="text-indigo-500 font-900 text-xs uppercase mb-1"></p><h2 id="snapUser" class="text-4xl font-900 text-slate-800 italic uppercase"></h2></div>
-            <div class="focus-badge"><p class="text-[9px] font-900 uppercase opacity-60">Total Focus</p><div id="snapTotal" class="focus-number">0h 00m</div></div>
+        <div class="flex justify-between items-end mb-6 border-b border-slate-100 pb-5">
+            <div><p id="snapDate" class="text-indigo-500 font-900 text-[10px] uppercase mb-1"></p><h2 id="snapUser" class="text-3xl font-900 text-slate-800 italic uppercase"></h2></div>
+            <div class="focus-badge"><p class="text-[8px] font-900 uppercase opacity-60">Total Focus</p><div id="snapTotal" class="focus-number">0h 00m</div></div>
         </div>
-        <div id="filteredGrid" class="space-y-1.5"></div>
+        <div id="filteredGrid" class="space-y-1"></div>
     </div></div>
 
     <script>
         let isDragging = false, isEraser = true, curCol = '#6366f1';
         let subjects = JSON.parse(localStorage.getItem('mySubs')) || [{name:'Quran', col:'#6366f1', icon:'📖'},{name:'Study', col:'#38bdf8', icon:'📝'}];
 
-        function setEraser(btn) { 
-            isEraser = true; 
-            document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active'); 
-        }
+        function setEraser(btn) { isEraser = true; document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 
         function renderSubs() {
             const list = document.getElementById('subList'), addBtn = list.querySelector('.relative'), eraser = document.getElementById('eraserBtn');
             Array.from(list.children).forEach(c => { if(c !== addBtn && c !== eraser) c.remove(); });
-            subjects.forEach((s, i) => {
+            subjects.forEach(s => {
                 const btn = document.createElement('button');
                 btn.className = "subject-btn min-w-[70px] p-2 rounded-xl text-center bg-slate-50";
                 btn.style.color = s.col;
@@ -108,13 +101,12 @@
             }
         }
 
-        // iPad Touch Support
-        window.addEventListener('touchstart', (e) => { if(e.target.classList.contains('slot')) { isDragging = true; } }, {passive: false});
+        window.addEventListener('touchstart', (e) => { if(e.target.classList.contains('slot')) isDragging = true; });
         window.addEventListener('touchmove', (e) => {
             if(!isDragging) return;
             e.preventDefault();
-            const touch = e.touches[0];
-            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            const t = e.touches[0];
+            const target = document.elementFromPoint(t.clientX, t.clientY);
             if(target && target.classList.contains('slot')) {
                 if(isEraser) { target.style.backgroundColor = ''; target.classList.remove('filled'); }
                 else { target.style.backgroundColor = curCol; target.classList.add('filled'); }
@@ -124,19 +116,42 @@
         window.addEventListener('mouseup', () => isDragging = false);
 
         async function takeSnap() {
-            const filtered = document.getElementById('filteredGrid'); filtered.innerHTML = '';
+            const filtered = document.getElementById('filteredGrid'); 
+            filtered.innerHTML = '';
             let hasData = false;
+            let filledSlotsCount = 0; 
+
             document.querySelectorAll('.time-row').forEach(r => {
-                if(r.querySelector('.slot.filled')) { filtered.appendChild(r.cloneNode(true)); hasData = true; }
+                const slotsInRow = r.querySelectorAll('.slot.filled');
+                if(slotsInRow.length > 0) {
+                    filledSlotsCount += slotsInRow.length; 
+                    const clone = r.cloneNode(true);
+                    clone.className = "time-row-snap";
+                    clone.querySelector('span').className = "text-[9px] font-900 text-slate-400 w-8 text-right";
+                    const grid = clone.querySelector('div');
+                    grid.className = "grid-snap";
+                    filtered.appendChild(clone);
+                    hasData = true;
+                }
             });
-            if(!hasData) return alert("ระบายสีก่อนบันทึกครับ");
+
+            if(!hasData) return alert("ระบายสีก่อนครับ");
+
             document.getElementById('snapDate').innerText = document.getElementById('planDate').value;
             document.getElementById('snapUser').innerText = document.getElementById('userTitle').innerText;
-            const mins = document.querySelectorAll('.slot.filled').length * 10;
-            document.getElementById('snapTotal').innerText = `${Math.floor(mins/60)}h ${(mins%60).toString().padStart(2,'0')}m`;
-            const area = document.getElementById('photoTemplate'); area.style.display = 'block';
+
+            const totalMinutes = filledSlotsCount * 10; 
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = totalMinutes % 60;
+            document.getElementById('snapTotal').innerText = `${hours}h ${mins.toString().padStart(2, '0')}m`;
+
+            const area = document.getElementById('photoTemplate'); 
+            area.style.display = 'block';
             const canvas = await html2canvas(document.getElementById('captureArea'), {scale:2});
-            const link = document.createElement('a'); link.download = 'Focus_10Min.png'; link.href = canvas.toDataURL(); link.click();
+            const link = document.createElement('a'); 
+            link.download = 'Focus_Correct.png'; 
+            link.href = canvas.toDataURL(); 
+            link.click();
             area.style.display = 'none';
         }
 
