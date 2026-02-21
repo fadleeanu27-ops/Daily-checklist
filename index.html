@@ -11,8 +11,8 @@
         body { font-family: 'Prompt', sans-serif; background: #f8fafc; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
         .main-card { background: white; border-radius: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .slot { border-radius: 0.6rem; background: #f1f5f9; height: 2.8rem; border: 1px solid #e2e8f0; pointer-events: auto; }
-        .subject-btn { transition: 0.3s; filter: grayscale(1); opacity: 0.5; position: relative; }
-        .subject-btn.active { filter: grayscale(0); opacity: 1; transform: translateY(-2px); }
+        .subject-btn { transition: 0.3s; filter: grayscale(1); opacity: 0.5; position: relative; border: 2px solid transparent; }
+        .subject-btn.active { filter: grayscale(0); opacity: 1; transform: translateY(-2px); border-color: inherit; background: white !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .no-scrollbar::-webkit-scrollbar { width: 0px; height: 0px; }
         
         /* สไตล์หน้าต่าง Save */
@@ -37,7 +37,7 @@
         </header>
 
         <div id="subList" class="flex gap-3 overflow-x-auto pb-4 mb-6 no-scrollbar">
-            <button onclick="setEraser(this)" class="eraser-btn subject-btn min-w-[90px] md:min-w-[110px] p-4 md:p-5 rounded-[2rem] text-center bg-slate-100">
+            <button id="eraserBtn" onclick="setEraser(this)" class="eraser-btn subject-btn min-w-[90px] md:min-w-[110px] p-4 md:p-5 rounded-[2rem] text-center bg-slate-100 active">
                 <div class="text-2xl mb-1">🧼</div>
                 <div class="text-[9px] font-900 uppercase text-slate-400">Eraser</div>
             </button>
@@ -50,7 +50,7 @@
             </div>
         </div>
 
-        <div id="mainGrid" class="space-y-4 flex-1 overflow-y-auto pr-2 no-scrollbar" style="touch-action: pan-y;">
+        <div id="mainGrid" class="space-y-4 flex-1 overflow-y-auto pr-2 no-scrollbar" style="touch-action: none;">
             </div>
     </div>
 
@@ -71,22 +71,40 @@
     </div>
 
     <script>
-        let isDragging = false, isEraserMode = false, curColor = '#6366f1', curSub = 'Quran';
+        let isDragging = false, isEraserMode = true, curColor = '#6366f1', curSub = 'Eraser';
         let subjects = JSON.parse(localStorage.getItem('myCustomSubjects')) || [
             {name: 'Quran', color: '#6366f1', icon: '📖'},
             {name: 'Halaqoh', color: '#38bdf8', icon: '🤝'}
         ];
 
-        function setEraser(btn) { isEraserMode = true; document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+        function setEraser(btn) { 
+            isEraserMode = true; 
+            document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); 
+            btn.classList.add('active'); 
+        }
 
         function renderSubjects() {
-            const list = document.getElementById('subList'), addBtnArea = list.querySelector('.relative'), eraserBtn = list.querySelector('.eraser-btn');
+            const list = document.getElementById('subList'), addBtnArea = list.querySelector('.relative'), eraserBtn = document.getElementById('eraserBtn');
             Array.from(list.children).forEach(child => { if(child !== addBtnArea && child !== eraserBtn) child.remove(); });
+            
             subjects.forEach((s, idx) => {
                 const btn = document.createElement('button');
                 btn.className = "subject-btn min-w-[90px] md:min-w-[110px] p-4 md:p-5 rounded-[2rem] text-center bg-slate-50";
-                btn.onclick = () => { isEraserMode = false; document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); curColor = s.color; curSub = s.name; };
-                btn.innerHTML = `<div class="del-sub" onclick="deleteSubject(${idx}); event.stopPropagation();">×</div><div class="text-2xl mb-1">${s.icon || '⭐'}</div><div class="text-[10px] font-900 uppercase" style="color:${s.color}">${s.name}</div>`;
+                
+                const selectAction = (e) => {
+                    isEraserMode = false;
+                    document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    btn.style.borderColor = s.color;
+                    curColor = s.color;
+                    curSub = s.name;
+                    if(e) e.stopPropagation();
+                };
+
+                btn.onclick = selectAction;
+                btn.ontouchstart = selectAction;
+
+                btn.innerHTML = `<div class="text-2xl mb-1">${s.icon || '⭐'}</div><div class="text-[10px] font-900 uppercase" style="color:${s.color}">${s.name}</div>`;
                 list.insertBefore(btn, addBtnArea);
             });
             localStorage.setItem('myCustomSubjects', JSON.stringify(subjects));
@@ -114,7 +132,7 @@
                 row.appendChild(slots); g.appendChild(row);
             }
 
-            // แก้ไขปัญหาการลากนิ้วบน iPad/มือถือ
+            // ระบบลากนิ้วระบายสีสำหรับ iPad
             window.addEventListener('touchmove', (e) => {
                 if (!isDragging) return;
                 const touch = e.touches[0];
@@ -123,7 +141,7 @@
                     if(isEraserMode) { el.style.backgroundColor = ''; el.classList.remove('filled'); }
                     else { el.style.backgroundColor = curColor; el.classList.add('filled'); }
                 }
-                e.preventDefault(); // ป้องกันหน้าจอเลื่อนหนีขณะลาก
+                e.preventDefault(); 
             }, { passive: false });
         }
 
@@ -151,7 +169,6 @@
         }
 
         function addNewSubject(color) { const name = prompt("ชื่อวิชา:"); if (name) { subjects.push({ name: name.substring(0,8), color: color, icon: '⭐' }); renderSubjects(); } }
-        function deleteSubject(index) { if(confirm('ลบวิชานี้?')) { subjects.splice(index, 1); renderSubjects(); } }
         function changeName() { const n = prompt("เปลี่ยนชื่อ:"); if(n) document.getElementById('userTitle').innerText = n.toUpperCase(); }
 
         window.onload = () => {
