@@ -3,134 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Focus Planner Pro</title>
+    <title>Focus Planner - FADLEEROMDON</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;700;900&family=Inter:wght@400;800&display=swap" rel="stylesheet">
     <style>
         * { touch-action: none; -webkit-user-select: none; user-select: none; }
-        body { font-family: 'Prompt', sans-serif; background: #f1f5f9; overflow: hidden; position: fixed; width: 100%; height: 100%; }
-        .main-card { background: white; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.08); height: 95vh; margin-top: 10px; }
-        .slot { border-radius: 3px; background: #f1f5f9; height: 1.5rem; border: 0.5px solid #e2e8f0; }
-        .subject-btn { transition: 0.2s; filter: grayscale(1); opacity: 0.4; border: 2px solid transparent; position: relative; }
-        .subject-btn.active { filter: grayscale(0); opacity: 1; border-color: currentColor; background: white !important; transform: scale(1.05); }
-        .delete-sub { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; visibility: hidden; }
-        .subject-btn:hover .delete-sub { visibility: visible; }
+        body { font-family: 'Prompt', sans-serif; background: #f8fafc; overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        .main-card { background: white; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 95vh; margin-top: 10px; }
+        .slot { border-radius: 4px; background: #f1f5f9; height: 1.6rem; border: 0.5px solid #e2e8f0; transition: 0.1s; }
+        .subject-btn { transition: 0.2s; filter: grayscale(1); opacity: 0.5; border: 2px solid transparent; position: relative; }
+        .subject-btn.active { filter: grayscale(0); opacity: 1; border-color: currentColor; background: white !important; transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .delete-btn { position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; }
+        #mainGrid { touch-action: none; overflow-y: auto; }
         .no-scrollbar::-webkit-scrollbar { width: 0px; }
-        #mainGrid { touch-action: none; overflow-y: auto; padding-right: 5px; }
         
-        /* สไตล์สำหรับรูปภาพที่บันทึก */
+        /* Save Image Styles */
         #photoTemplate { display: none; position: absolute; left: -9999px; }
-        #captureArea { background: white; padding: 30px; width: 550px; border-radius: 2rem; color: #1e293b; }
-        .focus-badge { background: #1e293b; color: white; padding: 12px 25px; border-radius: 1.5rem; text-align: center; }
-        .focus-number { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 2.2rem; line-height: 1; }
+        #captureArea { background: white; padding: 40px; width: 600px; border-radius: 2.5rem; color: #1e293b; }
+        .focus-badge { background: #1e293b; color: white; padding: 15px 30px; border-radius: 2rem; text-align: center; }
+        .focus-number { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 3rem; line-height: 1; }
     </style>
 </head>
 <body class="p-2 flex justify-center items-start">
 
     <div class="main-card max-w-4xl w-full p-4 md:p-8 flex flex-col">
-        <header class="flex justify-between items-center mb-4">
+        <header class="flex justify-between items-center mb-6">
             <div>
-                <input type="date" id="planDate" class="text-slate-400 text-sm font-bold border-none outline-none bg-transparent block">
+                <input type="date" id="planDate" class="text-indigo-400 text-sm font-bold border-none outline-none bg-transparent block">
                 <h2 class="text-2xl md:text-4xl font-900 text-slate-800 uppercase italic tracking-tighter">FADLEEROMDON</h2>
             </div>
-            <button onclick="takeSnap()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm active:scale-95 transition">📸 SAVE IMAGE</button>
+            <button onclick="takeSnap()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-100 active:scale-95 transition">
+                📸 SAVE IMAGE
+            </button>
         </header>
 
-        <div id="subList" class="flex gap-2 overflow-x-auto pb-3 mb-3 no-scrollbar border-b border-slate-100">
-            <button id="eraserBtn" onclick="setEraser(this)" class="subject-btn active min-w-[75px] p-2 rounded-xl text-center bg-slate-100 text-slate-400">
-                <div class="text-lg">🧼</div><div class="text-[7px] font-900 uppercase">Eraser</div>
+        <div id="subList" class="flex gap-3 overflow-x-auto pb-4 mb-4 no-scrollbar border-b border-slate-50">
+            <button id="eraserBtn" onclick="setEraser(this)" class="subject-btn active min-w-[80px] p-2 rounded-2xl text-center bg-slate-100 text-slate-400">
+                <div class="text-xl">🧼</div><div class="text-[8px] font-900 uppercase">Eraser</div>
             </button>
             
-            <button onclick="openAddSubject()" class="border-2 border-dashed border-slate-200 min-w-[75px] p-2 rounded-xl text-center text-slate-300 active:scale-90">
-                <div class="text-lg">+</div><div class="text-[7px] font-900 uppercase">Add Sub</div>
+            <button onclick="addNewSub()" class="border-2 border-dashed border-slate-200 min-w-[80px] p-2 rounded-2xl text-center text-slate-300">
+                <div class="text-xl">+</div><div class="text-[8px] font-900 uppercase">Add Sub</div>
             </button>
         </div>
 
-        <div id="mainGrid" class="space-y-1 flex-1 no-scrollbar"></div>
+        <div id="mainGrid" class="space-y-2 flex-1 no-scrollbar pb-10"></div>
     </div>
 
     <div id="photoTemplate"><div id="captureArea">
-        <div class="flex justify-between items-end mb-6 border-b border-slate-100 pb-5">
-            <div><p id="snapDate" class="text-indigo-500 font-900 text-[10px] uppercase mb-1"></p><h2 class="text-3xl font-900 text-slate-800 italic uppercase">FADLEEROMDON</h2></div>
-            <div class="focus-badge"><p class="text-[8px] font-900 uppercase opacity-60">Total Focus</p><div id="snapTotal" class="focus-number">0h 00m</div></div>
+        <div class="flex justify-between items-end mb-10 border-b-2 border-slate-50 pb-8">
+            <div>
+                <p id="snapDate" class="text-indigo-500 font-900 text-sm uppercase mb-1"></p>
+                <h2 class="text-5xl font-900 text-slate-800 italic uppercase">FADLEEROMDON</h2>
+            </div>
+            <div class="focus-badge">
+                <p class="text-[10px] font-900 uppercase opacity-60 tracking-widest">Total Focus</p>
+                <div id="snapTotal" class="focus-number">0h 00m</div>
+            </div>
         </div>
-        <div id="filteredGrid" class="space-y-1"></div>
+        <div id="filteredGrid" class="space-y-2"></div>
     </div></div>
 
     <script>
         let isDragging = false, isEraser = true, curCol = '#6366f1';
-        let subjects = JSON.parse(localStorage.getItem('mySubs')) || [
+        let subjects = JSON.parse(localStorage.getItem('mySubs_v2')) || [
             {name:'Quran', col:'#6366f1', icon:'📖'},
             {name:'Study', col:'#38bdf8', icon:'📚'}
         ];
 
         function setEraser(btn) { 
             isEraser = true; 
-            document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); 
+            document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active'); 
         }
 
         function renderSubs() {
-            const list = document.getElementById('subList');
-            const addBtn = list.querySelector('button[onclick="openAddSubject()"]');
-            const eraser = document.getElementById('eraserBtn');
-            
-            // ล้างรายการเดิม (ยกเว้นยางลบกับปุ่มเพิ่ม)
+            const list = document.getElementById('subList'), eraser = document.getElementById('eraserBtn');
+            const addBtn = list.querySelector('button[onclick="addNewSub()"]');
             Array.from(list.children).forEach(c => { if(c !== addBtn && c !== eraser) c.remove(); });
             
-            subjects.forEach((s, index) => {
+            subjects.forEach((s, idx) => {
                 const btn = document.createElement('button');
-                btn.className = "subject-btn min-w-[75px] p-2 rounded-xl text-center bg-slate-50";
+                btn.className = "subject-btn min-w-[80px] p-2 rounded-2xl text-center bg-slate-50";
                 btn.style.color = s.col;
+                btn.innerHTML = `<div class="delete-btn" onclick="deleteSub(event, ${idx})">×</div><div class="text-xl">${s.icon}</div><div class="text-[9px] font-900 uppercase">${s.name}</div>`;
                 
-                // ปุ่มลบวิชา
-                const del = document.createElement('div');
-                del.className = "delete-sub";
-                del.innerHTML = "✕";
-                del.onclick = (e) => { e.stopPropagation(); deleteSub(index); };
-                btn.appendChild(del);
-
-                const act = () => { 
-                    isEraser = false; curCol = s.col; 
-                    document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); 
-                    btn.classList.add('active'); 
+                const select = () => {
+                    isEraser = false; curCol = s.col;
+                    document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
                 };
-                btn.onclick = act; btn.ontouchstart = act;
-                btn.innerHTML += `<div class="text-lg">${s.icon}</div><div class="text-[8px] font-900 uppercase">${s.name}</div>`;
+                btn.onclick = select; btn.ontouchstart = select;
                 list.insertBefore(btn, addBtn);
             });
-            localStorage.setItem('mySubs', JSON.stringify(subjects));
+            localStorage.setItem('mySubs_v2', JSON.stringify(subjects));
         }
 
-        function openAddSubject() {
-            const name = prompt("ชื่อวิชา (ไม่เกิน 8 ตัวอักษร):");
-            if (!name) return;
-            const icon = prompt("ใส่อีโมจิ (เช่น 📚, ⚽, 📝):", "⭐");
-            const color = prompt("ใส่รหัสสี (เช่น #FF5733) หรือเลือกจากตัวเลือกถัดไป:", "#6366f1");
-            
-            subjects.push({ name: name.slice(0, 8), col: color, icon: icon || '⭐' });
+        function addNewSub() {
+            const name = prompt("ชื่อวิชา (สั้นๆ):");
+            if(!name) return;
+            const icon = prompt("ใส่อีโมจิ (เช่น 📝, 💡, 📖):", "⭐");
+            const color = prompt("ใส่รหัสสี (เช่น #ff0000) หรือปล่อยว่างเป็นสีม่วง:", "#818cf8");
+            subjects.push({name: name.slice(0,8), col: color || '#818cf8', icon: icon || '⭐'});
             renderSubs();
         }
 
-        function deleteSub(index) {
-            if(confirm("ลบวิชานี้ใช่ไหม?")) {
-                subjects.splice(index, 1);
-                renderSubs();
-            }
+        function deleteSub(e, idx) {
+            e.stopPropagation();
+            if(confirm("ลบวิชานี้ใช่ไหม?")) { subjects.splice(idx, 1); renderSubs(); }
         }
 
         function buildGrid() {
             const g = document.getElementById('mainGrid');
             for(let h=4; h<=23; h++) {
-                const row = document.createElement('div'); row.className = "time-row flex items-center gap-2";
-                row.innerHTML = `<span class="text-[9px] font-900 text-slate-300 w-8 text-right">${h}:00</span>`;
-                const slots = document.createElement('div'); slots.className = "flex-1 grid grid-cols-6 gap-1";
+                const row = document.createElement('div');
+                row.className = "time-row flex items-center gap-3";
+                row.innerHTML = `<span class="text-[10px] font-900 text-slate-300 w-10 text-right">${h}:00</span>`;
+                const slots = document.createElement('div');
+                slots.className = "flex-1 grid grid-cols-6 gap-1.5";
                 for(let i=0; i<6; i++) {
                     const s = document.createElement('div'); s.className = "slot";
                     const paint = (el) => {
-                        if(isEraser) { el.style.backgroundColor = ''; el.removeAttribute('data-c'); }
-                        else { el.style.backgroundColor = curCol; el.setAttribute('data-c', curCol); }
+                        if(isEraser) { el.style.backgroundColor = ''; el.removeAttribute('data-filled'); }
+                        else { el.style.backgroundColor = curCol; el.setAttribute('data-filled', curCol); }
                     };
                     s.onmousedown = () => { isDragging = true; paint(s); };
                     s.onmouseover = () => { if(isDragging) paint(s); };
@@ -140,7 +136,7 @@
             }
         }
 
-        // ระบบลากนิ้ว iPad/Phone
+        // ระบบสัมผัส iPad/iPhone
         window.addEventListener('touchstart', (e) => { if(e.target.classList.contains('slot')) isDragging = true; });
         window.addEventListener('touchmove', (e) => {
             if(!isDragging) return;
@@ -148,8 +144,8 @@
             const t = e.touches[0];
             const target = document.elementFromPoint(t.clientX, t.clientY);
             if(target && target.classList.contains('slot')) {
-                if(isEraser) { target.style.backgroundColor = ''; target.removeAttribute('data-c'); }
-                else { target.style.backgroundColor = curCol; target.setAttribute('data-c', curCol); }
+                if(isEraser) { target.style.backgroundColor = ''; target.removeAttribute('data-filled'); }
+                else { target.style.backgroundColor = curCol; target.setAttribute('data-filled', curCol); }
             }
         }, {passive: false});
         window.addEventListener('touchend', () => isDragging = false);
@@ -160,29 +156,32 @@
             document.querySelectorAll('.time-row').forEach(r => {
                 const slots = r.querySelectorAll('.slot');
                 let hasColor = false;
-                slots.forEach(s => { if(s.hasAttribute('data-c')) hasColor = true; });
+                slots.forEach(s => { if(s.hasAttribute('data-filled')) hasColor = true; });
                 if(hasColor) {
-                    const snapRow = document.createElement('div'); snapRow.className = "flex items-center gap-2 mb-1";
-                    const label = document.createElement('span'); label.className = "text-[9px] font-900 text-slate-400 w-8 text-right";
+                    const snapRow = document.createElement('div'); snapRow.className = "flex items-center gap-4 mb-2";
+                    const label = document.createElement('span'); label.className = "text-[10px] font-900 text-slate-400 w-10 text-right";
                     label.innerText = r.querySelector('span').innerText;
-                    const grid = document.createElement('div'); grid.className = "flex-1 grid grid-cols-6 gap-1";
+                    const gridSnap = document.createElement('div'); gridSnap.className = "flex-1 grid grid-cols-6 gap-2";
                     slots.forEach(s => {
-                        const sSnap = document.createElement('div'); sSnap.className = "h-5 rounded-[2px] border border-slate-50";
-                        if(s.hasAttribute('data-c')) { sSnap.style.backgroundColor = s.getAttribute('data-c'); totalMins += 10; }
-                        else { sSnap.style.backgroundColor = '#f8fafc'; }
-                        grid.appendChild(sSnap);
+                        const sSnap = document.createElement('div'); sSnap.className = "h-6 rounded-md border border-slate-50";
+                        if(s.hasAttribute('data-filled')) {
+                            sSnap.style.backgroundColor = s.getAttribute('data-filled');
+                            totalMins += 10;
+                        } else { sSnap.style.backgroundColor = '#f8fafc'; }
+                        gridSnap.appendChild(sSnap);
                     });
-                    snapRow.appendChild(label); snapRow.appendChild(grid);
+                    snapRow.appendChild(label); snapRow.appendChild(gridSnap);
                     filtered.appendChild(snapRow);
                 }
             });
-            if(totalMins === 0) return alert("ระบายสีก่อนครับ");
+            if(totalMins === 0) return alert("ระบายสีก่อนบันทึกครับ");
             document.getElementById('snapDate').innerText = document.getElementById('planDate').value;
-            const h = Math.floor(totalMins / 60); const m = totalMins % 60;
+            const h = Math.floor(totalMins / 60), m = totalMins % 60;
             document.getElementById('snapTotal').innerText = `${h}h ${m.toString().padStart(2, '0')}m`;
             const area = document.getElementById('photoTemplate'); area.style.display = 'block';
             const canvas = await html2canvas(document.getElementById('captureArea'), {scale:2});
-            const link = document.createElement('a'); link.download = 'Focus_FADLEEROMDON.png'; link.href = canvas.toDataURL(); link.click();
+            const link = document.createElement('a'); link.download = `Focus_FADLEEROMDON_${new Date().toLocaleDateString()}.png`;
+            link.href = canvas.toDataURL(); link.click();
             area.style.display = 'none';
         }
 
