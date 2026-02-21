@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>10-Min Focus Corrected</title>
+    <title>10-Min Focus Fixed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;700;900&family=Inter:wght@400;800&display=swap" rel="stylesheet">
@@ -11,18 +11,20 @@
         * { touch-action: none; -webkit-user-select: none; user-select: none; }
         body { font-family: 'Prompt', sans-serif; background: #f1f5f9; overflow: hidden; position: fixed; width: 100%; height: 100%; }
         .main-card { background: white; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.08); height: 95vh; margin-top: 10px; }
-        .slot { border-radius: 3px; background: rgb(241, 245, 249); height: 1.5rem; border: 0.5px solid #e2e8f0; }
+        .slot { border-radius: 3px; background: #f1f5f9; height: 1.5rem; border: 0.5px solid #e2e8f0; }
         .subject-btn { transition: 0.2s; filter: grayscale(1); opacity: 0.4; border: 2px solid transparent; }
         .subject-btn.active { filter: grayscale(0); opacity: 1; border-color: currentColor; background: white !important; transform: scale(1.05); }
         .no-scrollbar::-webkit-scrollbar { width: 0px; }
         #mainGrid { touch-action: none; overflow-y: auto; padding-right: 5px; }
+        
+        /* Photo Style */
         #photoTemplate { display: none; position: absolute; left: -9999px; }
-        #captureArea { background: white; padding: 30px; width: 600px; border-radius: 2rem; color: #1e293b; }
+        #captureArea { background: white; padding: 30px; width: 550px; border-radius: 2rem; color: #1e293b; }
         .focus-badge { background: #1e293b; color: white; padding: 12px 25px; border-radius: 1.5rem; text-align: center; }
-        .focus-number { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 2.5rem; line-height: 1; }
-        .time-row-snap { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .focus-number { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 2.2rem; line-height: 1; }
+        .row-snap { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
         .grid-snap { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; flex: 1; }
-        .slot-snap { border-radius: 3px; height: 1.5rem; border: 0.5px solid #eee; }
+        .s-snap { border-radius: 3px; height: 1.4rem; border: 0.5px solid #f1f5f9; }
     </style>
 </head>
 <body class="p-2 flex justify-center items-start">
@@ -89,8 +91,8 @@
                 for(let i=0; i<6; i++) {
                     const s = document.createElement('div'); s.className = "slot";
                     const paint = (el) => {
-                        if(isEraser) { el.style.backgroundColor = 'rgb(241, 245, 249)'; el.dataset.filled = "false"; }
-                        else { el.style.backgroundColor = curCol; el.dataset.filled = "true"; }
+                        if(isEraser) { el.style.backgroundColor = ''; el.removeAttribute('data-c'); }
+                        else { el.style.backgroundColor = curCol; el.setAttribute('data-c', curCol); }
                     };
                     s.onmousedown = () => { isDragging = true; paint(s); };
                     s.onmouseover = () => { if(isDragging) paint(s); };
@@ -107,59 +109,56 @@
             const t = e.touches[0];
             const target = document.elementFromPoint(t.clientX, t.clientY);
             if(target && target.classList.contains('slot')) {
-                if(isEraser) { target.style.backgroundColor = 'rgb(241, 245, 249)'; target.dataset.filled = "false"; }
-                else { target.style.backgroundColor = curCol; target.dataset.filled = "true"; }
+                if(isEraser) { target.style.backgroundColor = ''; target.removeAttribute('data-c'); }
+                else { target.style.backgroundColor = curCol; target.setAttribute('data-c', curCol); }
             }
         }, {passive: false});
         window.addEventListener('touchend', () => isDragging = false);
 
         async function takeSnap() {
             const filtered = document.getElementById('filteredGrid'); filtered.innerHTML = '';
-            let totalFilled = 0;
+            let totalMins = 0;
 
             document.querySelectorAll('.time-row').forEach(r => {
-                const originalSlots = r.querySelectorAll('.slot');
-                let rowHasColor = false;
-                originalSlots.forEach(s => { if(s.dataset.filled === "true") rowHasColor = true; });
+                const slots = r.querySelectorAll('.slot');
+                let hasColor = false;
+                slots.forEach(s => { if(s.hasAttribute('data-c')) hasColor = true; });
 
-                if(rowHasColor) {
-                    const snapRow = document.createElement('div');
-                    snapRow.className = "time-row-snap";
-                    const timeLabel = document.createElement('span');
-                    timeLabel.className = "text-[9px] font-900 text-slate-400 w-8 text-right";
-                    timeLabel.innerText = r.querySelector('span').innerText;
+                if(hasColor) {
+                    const snapRow = document.createElement('div'); snapRow.className = "row-snap";
+                    const label = document.createElement('span');
+                    label.className = "text-[9px] font-900 text-slate-400 w-8 text-right";
+                    label.innerText = r.querySelector('span').innerText;
                     
-                    const gridSnap = document.createElement('div');
-                    gridSnap.className = "grid-snap";
-                    
-                    originalSlots.forEach(s => {
-                        const sSnap = document.createElement('div');
-                        sSnap.className = "slot-snap";
-                        sSnap.style.backgroundColor = s.style.backgroundColor;
-                        if(s.dataset.filled === "true") totalFilled++;
-                        gridSnap.appendChild(sSnap);
+                    const grid = document.createElement('div'); grid.className = "grid-snap";
+                    slots.forEach(s => {
+                        const sSnap = document.createElement('div'); sSnap.className = "s-snap";
+                        if(s.hasAttribute('data-c')) {
+                            sSnap.style.backgroundColor = s.getAttribute('data-c');
+                            totalMins += 10; // นับแค่ช่องที่ระบายจริงๆ เท่านั้น
+                        } else {
+                            sSnap.style.backgroundColor = '#f8fafc';
+                        }
+                        grid.appendChild(sSnap);
                     });
-                    
-                    snapRow.appendChild(timeLabel); snapRow.appendChild(gridSnap);
+                    snapRow.appendChild(label); snapRow.appendChild(grid);
                     filtered.appendChild(snapRow);
                 }
             });
 
-            if(totalFilled === 0) return alert("ระบายสีก่อนครับ");
+            if(totalMins === 0) return alert("ระบายสีก่อนครับ");
 
             document.getElementById('snapDate').innerText = document.getElementById('planDate').value;
             document.getElementById('snapUser').innerText = document.getElementById('userTitle').innerText;
             
-            const hours = Math.floor((totalFilled * 10) / 60);
-            const mins = (totalFilled * 10) % 60;
-            document.getElementById('snapTotal').innerText = `${hours}h ${mins.toString().padStart(2, '0')}m`;
+            const h = Math.floor(totalMins / 60);
+            const m = totalMins % 60;
+            document.getElementById('snapTotal').innerText = `${h}h ${m.toString().padStart(2, '0')}m`;
 
             const area = document.getElementById('photoTemplate'); 
             area.style.display = 'block';
             const canvas = await html2canvas(document.getElementById('captureArea'), {scale:2});
-            const link = document.createElement('a'); 
-            link.download = 'Focus_Plan.png'; 
-            link.href = canvas.toDataURL(); link.click();
+            const link = document.createElement('a'); link.download = 'Focus_Correct.png'; link.href = canvas.toDataURL(); link.click();
             area.style.display = 'none';
         }
 
