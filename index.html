@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>10-Min Focus Planner</title>
+    <title>10-Min Focus Corrected</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;700;900&family=Inter:wght@400;800&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
         * { touch-action: none; -webkit-user-select: none; user-select: none; }
         body { font-family: 'Prompt', sans-serif; background: #f1f5f9; overflow: hidden; position: fixed; width: 100%; height: 100%; }
         .main-card { background: white; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.08); height: 95vh; margin-top: 10px; }
-        .slot { border-radius: 3px; background: #f1f5f9; height: 1.5rem; border: 0.5px solid #e2e8f0; }
+        .slot { border-radius: 3px; background: rgb(241, 245, 249); height: 1.5rem; border: 0.5px solid #e2e8f0; }
         .subject-btn { transition: 0.2s; filter: grayscale(1); opacity: 0.4; border: 2px solid transparent; }
         .subject-btn.active { filter: grayscale(0); opacity: 1; border-color: currentColor; background: white !important; transform: scale(1.05); }
         .no-scrollbar::-webkit-scrollbar { width: 0px; }
@@ -20,8 +20,9 @@
         #captureArea { background: white; padding: 30px; width: 600px; border-radius: 2rem; color: #1e293b; }
         .focus-badge { background: #1e293b; color: white; padding: 12px 25px; border-radius: 1.5rem; text-align: center; }
         .focus-number { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 2.5rem; line-height: 1; }
-        .time-row-snap { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .time-row-snap { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .grid-snap { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; flex: 1; }
+        .slot-snap { border-radius: 3px; height: 1.5rem; border: 0.5px solid #eee; }
     </style>
 </head>
 <body class="p-2 flex justify-center items-start">
@@ -60,7 +61,7 @@
 
     <script>
         let isDragging = false, isEraser = true, curCol = '#6366f1';
-        let subjects = JSON.parse(localStorage.getItem('mySubs')) || [{name:'Quran', col:'#6366f1', icon:'📖'},{name:'Study', col:'#38bdf8', icon:'📝'}];
+        let subjects = JSON.parse(localStorage.getItem('mySubs')) || [{name:'Quran', col:'#6366f1', icon:'📖'}];
 
         function setEraser(btn) { isEraser = true; document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 
@@ -82,16 +83,14 @@
         function buildGrid() {
             const g = document.getElementById('mainGrid');
             for(let h=4; h<=23; h++) {
-                const row = document.createElement('div');
-                row.className = "time-row flex items-center gap-2";
+                const row = document.createElement('div'); row.className = "time-row flex items-center gap-2";
                 row.innerHTML = `<span class="text-[9px] font-900 text-slate-300 w-8 text-right">${h}:00</span>`;
-                const slots = document.createElement('div');
-                slots.className = "flex-1 grid grid-cols-6 gap-1";
+                const slots = document.createElement('div'); slots.className = "flex-1 grid grid-cols-6 gap-1";
                 for(let i=0; i<6; i++) {
                     const s = document.createElement('div'); s.className = "slot";
                     const paint = (el) => {
-                        if(isEraser) { el.style.backgroundColor = ''; el.classList.remove('filled'); }
-                        else { el.style.backgroundColor = curCol; el.classList.add('filled'); }
+                        if(isEraser) { el.style.backgroundColor = 'rgb(241, 245, 249)'; el.dataset.filled = "false"; }
+                        else { el.style.backgroundColor = curCol; el.dataset.filled = "true"; }
                     };
                     s.onmousedown = () => { isDragging = true; paint(s); };
                     s.onmouseover = () => { if(isDragging) paint(s); };
@@ -108,56 +107,64 @@
             const t = e.touches[0];
             const target = document.elementFromPoint(t.clientX, t.clientY);
             if(target && target.classList.contains('slot')) {
-                if(isEraser) { target.style.backgroundColor = ''; target.classList.remove('filled'); }
-                else { target.style.backgroundColor = curCol; target.classList.add('filled'); }
+                if(isEraser) { target.style.backgroundColor = 'rgb(241, 245, 249)'; target.dataset.filled = "false"; }
+                else { target.style.backgroundColor = curCol; target.dataset.filled = "true"; }
             }
         }, {passive: false});
         window.addEventListener('touchend', () => isDragging = false);
-        window.addEventListener('mouseup', () => isDragging = false);
 
         async function takeSnap() {
-            const filtered = document.getElementById('filteredGrid'); 
-            filtered.innerHTML = '';
-            let hasData = false;
-            let filledSlotsCount = 0; 
+            const filtered = document.getElementById('filteredGrid'); filtered.innerHTML = '';
+            let totalFilled = 0;
 
             document.querySelectorAll('.time-row').forEach(r => {
-                const slotsInRow = r.querySelectorAll('.slot.filled');
-                if(slotsInRow.length > 0) {
-                    filledSlotsCount += slotsInRow.length; 
-                    const clone = r.cloneNode(true);
-                    clone.className = "time-row-snap";
-                    clone.querySelector('span').className = "text-[9px] font-900 text-slate-400 w-8 text-right";
-                    const grid = clone.querySelector('div');
-                    grid.className = "grid-snap";
-                    filtered.appendChild(clone);
-                    hasData = true;
+                const originalSlots = r.querySelectorAll('.slot');
+                let rowHasColor = false;
+                originalSlots.forEach(s => { if(s.dataset.filled === "true") rowHasColor = true; });
+
+                if(rowHasColor) {
+                    const snapRow = document.createElement('div');
+                    snapRow.className = "time-row-snap";
+                    const timeLabel = document.createElement('span');
+                    timeLabel.className = "text-[9px] font-900 text-slate-400 w-8 text-right";
+                    timeLabel.innerText = r.querySelector('span').innerText;
+                    
+                    const gridSnap = document.createElement('div');
+                    gridSnap.className = "grid-snap";
+                    
+                    originalSlots.forEach(s => {
+                        const sSnap = document.createElement('div');
+                        sSnap.className = "slot-snap";
+                        sSnap.style.backgroundColor = s.style.backgroundColor;
+                        if(s.dataset.filled === "true") totalFilled++;
+                        gridSnap.appendChild(sSnap);
+                    });
+                    
+                    snapRow.appendChild(timeLabel); snapRow.appendChild(gridSnap);
+                    filtered.appendChild(snapRow);
                 }
             });
 
-            if(!hasData) return alert("ระบายสีก่อนครับ");
+            if(totalFilled === 0) return alert("ระบายสีก่อนครับ");
 
             document.getElementById('snapDate').innerText = document.getElementById('planDate').value;
             document.getElementById('snapUser').innerText = document.getElementById('userTitle').innerText;
-
-            const totalMinutes = filledSlotsCount * 10; 
-            const hours = Math.floor(totalMinutes / 60);
-            const mins = totalMinutes % 60;
+            
+            const hours = Math.floor((totalFilled * 10) / 60);
+            const mins = (totalFilled * 10) % 60;
             document.getElementById('snapTotal').innerText = `${hours}h ${mins.toString().padStart(2, '0')}m`;
 
             const area = document.getElementById('photoTemplate'); 
             area.style.display = 'block';
             const canvas = await html2canvas(document.getElementById('captureArea'), {scale:2});
             const link = document.createElement('a'); 
-            link.download = 'Focus_Correct.png'; 
-            link.href = canvas.toDataURL(); 
-            link.click();
+            link.download = 'Focus_Plan.png'; 
+            link.href = canvas.toDataURL(); link.click();
             area.style.display = 'none';
         }
 
         function addNewSubject(c) { const n = prompt("ชื่อวิชา:"); if(n) { subjects.push({name:n.slice(0,8), col:c, icon:'⭐'}); renderSubs(); } }
         function changeName() { const n = prompt("เปลี่ยนชื่อ:"); if(n) document.getElementById('userTitle').innerText = n.toUpperCase(); }
-
         window.onload = () => { document.getElementById('planDate').valueAsDate = new Date(); renderSubs(); buildGrid(); };
     </script>
 </body>
